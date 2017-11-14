@@ -50,6 +50,6 @@
         "nodemailer": "^2.2.1"
     },
     "scripts": {
-        "test": "mocha"
+        "test": "mocha --exit"
     }
 }
