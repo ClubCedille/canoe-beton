@@ -40,8 +40,8 @@ gulp build
 NODE_ENV=prod forever server.js
 ```
 
-## Help To Update canoe-beton
-(without Git commands)
+## Aide pour la modification du site canoe-beton
+(sans Git commands)
 
 ### Mettre à jour votre Fork
 
