@@ -21,6 +21,10 @@
 - ```gulp serve:dist``` same as serve task, but with the files in the dist folder
 - ```gulp wiredep``` inject bower components
 
+## Using docker-compose
+
+To launch the website in a "production" environment, simply use `docker-compose up`
+
 ## Deployment
 - Make sure forever is installed
 ```
