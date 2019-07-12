@@ -1,19 +1,21 @@
-from node:8.16.0-stretch
+FROM node:8.16-stretch as builder
 
-RUN apt install -y python make
-RUN npm install -g bower gulp forever
+RUN apt install -y python make && \
+    npm install -g bower gulp
 
 WORKDIR /app
 COPY package.json .
 COPY package-lock.json .
-RUN npm install
-
 COPY bower.json .
-RUN bower install --allow-root
+
+RUN npm ci && \ 
+    bower install --allow-root
 
 COPY . .
 
-RUN cp config/config.skel config/config.prod.js
-RUN gulp build
+RUN cp config/config.skel config/config.prod.js && \
+    gulp build
 
-CMD npm run start
+
+FROM nginx:1.17-alpine
+COPY --from=builder /app/dist /usr/share/nginx/html
