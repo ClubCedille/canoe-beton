@@ -1,0 +1,69 @@
+version: 2.1
+
+orbs:
+  node: circleci/node@1.1.6
+  gcp-gke: circleci/gcp-gke@0.1.0
+  gcr: circleci/gcp-gcr@0.0.2
+  kube-orb: circleci/kubernetes@0.11.0
+
+commands:
+  rollout-image:
+    description: "Update a deployment's Docker image."
+    parameters:
+      cluster:
+        description: "The Kubernetes cluster name."
+        type: string
+      deployment:
+        description: "The Kubernetes deployment name."
+        type: string
+      container:
+        description: "The Kubernetes container name."
+        type: string
+      image:
+        description: A name for your docker image
+        type: string
+      namespace:
+        description: A namespace
+        type: string
+    steps:
+      # Install  `kubectl` if not already installed and set the config 
+      - kube-orb/install-kubeconfig:
+          kubeconfig: KUBECONFIG_DATA
+      - run: |
+          kubectl set image deployment <<parameters.deployment>> -n <<parameters.namespace>> <<parameters.container>>=<<parameters.image>>
+
+jobs:
+  build:
+    docker:
+      - image: circleci/node:7.10
+    steps:
+      - checkout
+      - setup_remote_docker
+      - gcp-gke/install
+      - gcp-gke/init
+      - run: |
+          TAG=latest
+          gcloud auth configure-docker
+          docker build -t us.gcr.io/sre-cedille/canoe-beton:$TAG .
+          docker push us.gcr.io/sre-cedille/canoe-beton:$TAG    
+  deploy:
+    description: Deploy application to Google Kubernetes Engine
+    machine: true
+    steps:
+      # Install `gcloud` and `kubectl` if not already installed.
+      - gcp-gke/install
+      - rollout-image:
+          deployment: canoe
+          image: us.gcr.io/sre-cedille/canoe-beton:latest
+          container: canoe
+          cluster: sre-cedille
+          namespace: canoe
+
+      
+workflows:
+  build_update_deploy:
+    jobs:
+      - build
+      - deploy:
+          requires:
+            - build
