@@ -30,40 +30,72 @@ commands:
       - kube-orb/install-kubeconfig:
           kubeconfig: KUBECONFIG_DATA
       - run: |
+          kubectl set image deployment <<parameters.deployment>> -n <<parameters.namespace>> <<parameters.container>>=<<parameters.image>>:latest
           kubectl set image deployment <<parameters.deployment>> -n <<parameters.namespace>> <<parameters.container>>=<<parameters.image>>
 
-jobs:
-  build:
+
+executors:
+  docker:
+    environment:
+      IMAGE_NAME: us.gcr.io/sre-cedille/canoe-beton
     docker:
       - image: circleci/node:7.10
+jobs:
+  build:
+    executor: docker
     steps:
       - checkout
       - setup_remote_docker
+      - run: 
+          name: Build Docker image
+          command: |
+            TAG=latest
+            docker build -t $IMAGE_NAME:$TAG . 
+  publish:
+    executor: docker
+    steps:
+      - attach_workspace:
+          at: /tmp/workspace
+      - setup_remote_docker
+      - run:
+          name: Load archived Docker image
+          command: docker load -i /tmp/workspace/image.tar
       - gcp-gke/install
       - gcp-gke/init
-      - run: |
-          TAG=latest
-          gcloud auth configure-docker
-          docker build -t us.gcr.io/sre-cedille/canoe-beton:$TAG .
-          docker push us.gcr.io/sre-cedille/canoe-beton:$TAG    
+      - run: 
+          name: publish Docker image
+          command: |
+            TAG=latest
+            gcloud auth configure-docker
+            docker push $IMAGE_NAME:$TAG   
+      - run:
+          name: Archive Docker image
+          command: docker save -o image.tar $IMAGE_NAME
+      - persist_to_workspace:
+            root: .
+            paths:
+              - ./image.tar 
   deploy:
-    description: Deploy application to Google Kubernetes Engine
-    machine: true
+    executor: docker
+    description: Deploy docker image to Google Kubernetes Engine
     steps:
       # Install `gcloud` and `kubectl` if not already installed.
       - gcp-gke/install
       - rollout-image:
           deployment: canoe
-          image: us.gcr.io/sre-cedille/canoe-beton:latest
+          image: $IMAGE_NAME
           container: canoe
           cluster: sre-cedille
           namespace: canoe
 
       
 workflows:
-  build_update_deploy:
+  build_push_deploy:
     jobs:
       - build
-      - deploy:
+      - publish:
           requires:
             - build
+      - deploy:
+          requires:
+            - publish
