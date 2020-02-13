@@ -51,6 +51,13 @@ jobs:
           command: |
             TAG=latest
             docker build -t $IMAGE_NAME:$TAG . 
+      - run:
+          name: Archive Docker image
+          command: docker save -o image.tar $IMAGE_NAME
+      - persist_to_workspace:
+          root: .
+          paths:
+            - ./image.tar 
   publish:
     executor: docker
     steps:
@@ -68,13 +75,6 @@ jobs:
             TAG=latest
             gcloud auth configure-docker
             docker push $IMAGE_NAME:$TAG   
-      - run:
-          name: Archive Docker image
-          command: docker save -o image.tar $IMAGE_NAME
-      - persist_to_workspace:
-            root: .
-            paths:
-              - ./image.tar 
   deploy:
     executor: docker
     description: Deploy docker image to Google Kubernetes Engine
