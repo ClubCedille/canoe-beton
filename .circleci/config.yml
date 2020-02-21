@@ -1,0 +1,101 @@
+version: 2.1
+
+orbs:
+  node: circleci/node@1.1.6
+  gcp-gke: circleci/gcp-gke@0.1.0
+  gcr: circleci/gcp-gcr@0.0.2
+  kube-orb: circleci/kubernetes@0.11.0
+
+commands:
+  rollout-image:
+    description: "Update a deployment's Docker image."
+    parameters:
+      cluster:
+        description: "The Kubernetes cluster name."
+        type: string
+      deployment:
+        description: "The Kubernetes deployment name."
+        type: string
+      container:
+        description: "The Kubernetes container name."
+        type: string
+      image:
+        description: A name for your docker image
+        type: string
+      namespace:
+        description: A namespace
+        type: string
+    steps:
+      # Install  `kubectl` if not already installed and set the config 
+      - kube-orb/install-kubeconfig:
+          kubeconfig: KUBECONFIG_DATA
+      - run: |
+          kubectl set image deployment <<parameters.deployment>> -n <<parameters.namespace>> <<parameters.container>>=<<parameters.image>>:latest
+          kubectl set image deployment <<parameters.deployment>> -n <<parameters.namespace>> <<parameters.container>>=<<parameters.image>>
+
+
+executors:
+  docker:
+    environment:
+      IMAGE_NAME: us.gcr.io/sre-cedille/canoe-beton
+    docker:
+      - image: circleci/node:7.10
+jobs:
+  build:
+    executor: docker
+    steps:
+      - checkout
+      - setup_remote_docker
+      - run: 
+          name: Build Docker image
+          command: |
+            TAG=latest
+            docker build -t $IMAGE_NAME:$TAG . 
+      - run:
+          name: Archive Docker image
+          command: docker save -o image.tar $IMAGE_NAME
+      - persist_to_workspace:
+          root: .
+          paths:
+            - ./image.tar 
+  publish:
+    executor: docker
+    steps:
+      - attach_workspace:
+          at: /tmp/workspace
+      - setup_remote_docker
+      - run:
+          name: Load archived Docker image
+          command: docker load -i /tmp/workspace/image.tar
+      - gcp-gke/install
+      - gcp-gke/init
+      - run: 
+          name: publish Docker image
+          command: |
+            TAG=latest
+            gcloud auth configure-docker
+            docker push $IMAGE_NAME:$TAG   
+  deploy:
+    executor: docker
+    description: Deploy docker image to Google Kubernetes Engine
+    steps:
+      # Install `gcloud` and `kubectl` if not already installed.
+      - gcp-gke/install
+      - rollout-image:
+          deployment: canoe
+          image: $IMAGE_NAME
+          container: canoe
+          cluster: sre-cedille
+          namespace: canoe
+
+      
+workflows:
+  build_push_deploy:
+    jobs:
+      - build
+      - publish:
+          requires:
+            - build
+      - deploy:
+          requires:
+            - publish
