@@ -1,5 +1,5 @@
-# canoe-beton
-
+# canoe-beton 
+[![CircleCI](https://circleci.com/gh/ClubCedille/canoe-beton/tree/master.svg?style=svg)](https://circleci.com/gh/ClubCedille/canoe-beton/tree/master)
 ## To Start Working
 
 - Make sure Node is installed
@@ -20,6 +20,10 @@
 - ```gulp clean``` clean the dist and temp folder
 - ```gulp serve:dist``` same as serve task, but with the files in the dist folder
 - ```gulp wiredep``` inject bower components
+
+## Using docker-compose
+
+To launch the website in a "production" environment, simply use `docker-compose up`
 
 ## Deployment
 - Make sure forever is installed
