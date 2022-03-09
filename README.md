@@ -1,5 +1,5 @@
 # canoe-beton 
-[![CircleCI](https://circleci.com/gh/ClubCedille/canoe-beton/tree/master.svg?style=svg)](https://circleci.com/gh/ClubCedille/canoe-beton/tree/master)
+
 ## To Start Working
 
 - Make sure Node is installed
