@@ -27,7 +27,7 @@
         "main-bower-files": "^2.5.0",
         "mockery": "^1.4.0",
         "sinon": "^1.17.3",
-        "supertest": "^1.2.0",
+        "supertest": "^6.3.3",
         "wiredep": "^2.2.2"
     },
     "eslintConfig": {
