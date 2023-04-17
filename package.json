@@ -28,7 +28,7 @@
         "mockery": "^1.4.0",
         "sinon": "^1.17.3",
         "supertest": "^1.2.0",
-        "wiredep": "^2.2.2"
+        "wiredep": "^4.0.0"
     },
     "eslintConfig": {
         "env": {
